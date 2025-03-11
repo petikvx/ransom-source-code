@@ -163,3 +163,134 @@ petik@ams:signature-base$ find ./ -name "*ransom*yar"
 ./yara/apt_lazarus_vhd_ransomware.yar
 ./yara/apt_ransom_darkbit_feb23.yar
 ```
+
+Code I use :
+```bash
+# Function to scan for ransomware and move detected files to a quarantine folder
+ptkyara() {
+    # Check if YARA is installed
+    if ! command -v yara &> /dev/null; then
+        echo "Error: YARA is not installed. Please install it:"
+        echo "  Debian/Ubuntu: sudo apt-get install yara"
+        echo "  Red Hat/CentOS: sudo yum install yara"
+        return 1
+    fi
+
+    # Check if a parameter (folder to scan) is provided
+    if [ -z "$1" ]; then
+        echo "Usage: $0 <folder>"
+        echo "Example: $0 /path/to/folder"
+        return 1
+    fi
+
+    local TARGET_DIR="$1"
+
+    # Check if the target folder exists
+    if [ ! -d "$TARGET_DIR" ]; then
+        echo "Error: The folder '$TARGET_DIR' does not exist or is not a directory."
+        return 1
+    fi
+
+    # Default paths for YARA directories
+    local DETECTION_DIR="$HOME/detection"
+    local SIGNATURE_BASE_DIR="$HOME/signature-base"
+
+    # Verify existence of default directories
+    for dir in "$DETECTION_DIR" "$SIGNATURE_BASE_DIR"; do
+        if [ ! -d "$dir" ]; then
+            echo "Error: The directory '$dir' does not exist."
+            return 1
+        fi
+    done
+
+    # Specific paths for targeted YARA files
+    local INDICATOR_YARA="$DETECTION_DIR/yara/indicator_suspicious.yar"
+    local OLYMPIC_YARA="$SIGNATURE_BASE_DIR/yara/apt_olympic_destroyer.yar"
+    local GENERIC_YARA="$SIGNATURE_BASE_DIR/yara/crime_ransom_generic.yar"
+
+    # Verify existence of specific YARA files
+    for yara_file in "$INDICATOR_YARA" "$OLYMPIC_YARA" "$GENERIC_YARA"; do
+        if [ ! -f "$yara_file" ]; then
+            echo "Error: The YARA file '$yara_file' does not exist."
+            return 1
+        fi
+    done
+
+    # List of YARA files with "ransom" in their name
+    local RANSOM_YARA_DIR="$SIGNATURE_BASE_DIR/yara"
+    local RANSOM_YARA_FILES=$(find "$RANSOM_YARA_DIR" -name "*ransom*yar" 2>/dev/null)
+    if [ -z "$RANSOM_YARA_FILES" ]; then
+        echo "Warning: No '*ransom*yar' files found in '$RANSOM_YARA_DIR'."
+    fi
+
+    # Count total number of rules used
+    local TOTAL_RULES=3  # The 3 specific files
+    if [ -n "$RANSOM_YARA_FILES" ]; then
+        local EXTRA_RULES=$(echo "$RANSOM_YARA_FILES" | wc -l)
+        TOTAL_RULES=$((TOTAL_RULES + EXTRA_RULES))
+    fi
+
+    # Perform the scan
+    echo "Scanning '$TARGET_DIR' with $TOTAL_RULES YARA rules..."
+    local RESULT_FILE="scan_results.txt"
+    > "$RESULT_FILE"  # Clear the file before starting
+
+    # Scan with specific files and targeted rules
+    echo " - $(basename "$INDICATOR_YARA") [INDICATOR_SUSPICIOUS_GENRansomware]"
+    yara -r -i INDICATOR_SUSPICIOUS_GENRansomware "$INDICATOR_YARA" "$TARGET_DIR" >> "$RESULT_FILE" 2>/dev/null
+
+    echo " - $(basename "$OLYMPIC_YARA") [Destructive_Ransomware_Gen1]"
+    yara -r -i Destructive_Ransomware_Gen1 "$OLYMPIC_YARA" "$TARGET_DIR" >> "$RESULT_FILE" 2>/dev/null
+
+    echo " - $(basename "$GENERIC_YARA") [SUSP_RANSOMWARE_Indicator_Jul20]"
+    yara -r -i SUSP_RANSOMWARE_Indicator_Jul20 "$GENERIC_YARA" "$TARGET_DIR" >> "$RESULT_FILE" 2>/dev/null
+
+    # Scan with all *ransom*yar files (all rules included)
+    if [ -n "$RANSOM_YARA_FILES" ]; then
+        for yara_file in $RANSOM_YARA_FILES; do
+            echo " - $(basename "$yara_file") [all rules]"
+            yara -r "$yara_file" "$TARGET_DIR" >> "$RESULT_FILE" 2>/dev/null
+        done
+    fi
+
+    # Create the quarantine folder with "-ransomware" suffix
+    local QUARANTINE_DIR="${TARGET_DIR}-ransomware"
+    if [ ! -d "$QUARANTINE_DIR" ]; then
+        mkdir -p "$QUARANTINE_DIR"
+        if [ $? -ne 0 ]; then
+            echo "Error: Unable to create the folder '$QUARANTINE_DIR'."
+            rm -f "$RESULT_FILE"
+            return 1
+        fi
+    fi
+
+    # Process results and move detected files
+    echo "Results:"
+    if [ -s "$RESULT_FILE" ]; then
+        cat "$RESULT_FILE"
+        local DETECTED_COUNT=$(wc -l < "$RESULT_FILE")
+        echo "Number of detections: $DETECTED_COUNT"
+
+        # Extract file paths and move them
+        echo "Moving detected files to '$QUARANTINE_DIR'..."
+        while IFS= read -r line; do
+            local FILE_PATH=$(echo "$line" | awk '{print $2}')
+            if [ -f "$FILE_PATH" ]; then
+                mv "$FILE_PATH" "$QUARANTINE_DIR/"
+                if [ $? -eq 0 ]; then
+                    echo " - Moved: $FILE_PATH -> $QUARANTINE_DIR/$(basename "$FILE_PATH")"
+                else
+                    echo " - Error moving '$FILE_PATH'."
+                fi
+            else
+                echo " - File not found: $FILE_PATH"
+            fi
+        done < "$RESULT_FILE"
+    else
+        echo "No ransomware detected."
+    fi
+
+    # Cleanup
+    rm -f "$RESULT_FILE"
+}
+```
