@@ -52,7 +52,7 @@ ptkmwdb() {
 
 Download block from VirusShare or vx-underground and search specific Yara Rules.
 
-- `yara detection/indicator_suspicious.yar -i INDICATOR_SUSPICIOUS_GENRansomware`
+- `yara detection/yara/indicator_suspicious.yar -i INDICATOR_SUSPICIOUS_GENRansomware`
 ```yara
 rule INDICATOR_SUSPICIOUS_GENRansomware {
     meta:
@@ -98,7 +98,7 @@ rule Destructive_Ransomware_Gen1 {
       uint16(0) == 0x5a4d and filesize < 100KB and 1 of them
 }
 ```
-- `yara signature-base/yara/crime_ransom_generic.yar -i Destructive_Ransomware_Gen1`
+- `yara signature-base/yara/crime_ransom_generic.yar -i SUSP_RANSOMWARE_Indicator_Jul20`
 ```yara
 rule SUSP_RANSOMWARE_Indicator_Jul20 {
    meta:
