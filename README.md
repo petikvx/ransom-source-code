@@ -499,3 +499,17 @@ ptkcompilers() {
     echo "- Other: Other uncategorized compilers (*.ex_ for PE32/PE32+)"
 }
 ```
+```
+petik@lab:~$ tree 2025-02-11-ransomware
+2025-02-11-ransomware
+├── Delphi
+│   ├── HEUR-Trojan-Ransom.Win32.Generic-26a74ace0b160831901b912f173137326019e731530e4ec283cbe44e3ccda165.ex_
+│   ├── HEUR-Trojan-Ransom.Win32.Generic-fe81c5caa0e269c1cbbd0aca9557677c4f57829d621f2f21768728c92e4f0498.ex_
+│   ├── HEUR-Trojan-Ransom.Win32.Trigona.gen-be6dfedd91e1ebc81d58a61b05b0ef93322425b247636a0f7f5c3eeebbc52edd.ex_
+│   ├── HEUR-Trojan-Ransom.Win32.Trigona.gen-ff82b9021651a1de046c80242be44b53fa23f88f850b9d536ce8be7d9b41afbb.ex_
+│   ├── UDS-Trojan-Ransom.Win32.Trigona.ad-b4df356a0b8746b77456531f53cf8418b356b40cd3a9ea214bfe2adba8e8838b.ex_
+│   └── UDS-Trojan-Ransom.Win32.Trigona.ae-807b27dd4ddf9f8be2493a9e9f9a1bbe69c06770039847425acc6458d72f29dd.ex_
+└── VisualCpp
+    └── HEUR-Trojan-Ransom.Win32.Generic-44d933ece41417b88fe4961b801c851d7b802d3d5c32bfeba187041b6f675faa.ex_
+
+```
