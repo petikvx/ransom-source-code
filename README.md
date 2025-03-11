@@ -336,3 +336,166 @@ ptkyara() {
     rm -f "$RESULT_FILE"
 }
 ```
+## Categorize malware by compiler
+
+The `ptkcompilers` Bash function organizes files in specified directories based on their compiler signatures and renames them according to specific rules. It:
+
+1.  **Checks Dependencies**: Ensures diec (Detect It Easy) and file commands are installed, returning an error if either is missing.
+2.  **Validates Input**: Requires at least one directory as an argument, otherwise returns an error.
+3.  **Categorizes Files**: Uses diec to analyze files and moves them into subdirectories (VisualCpp, DotNet, MinGW, GoLang, PureBasic, Delphi, VBNet, Unknown, Other) based on detected compilers, with special handling for Borland and Embarcadero Delphi files.
+4.  **Renames Files**:
+    -   Adds .exe to all files in DotNet.
+    -   Uses file to detect PE32/PE32+ executables in other directories and renames them with .ex_.
+5.  **Cleans Up**: Removes empty subdirectories after processing.
+6.  **Provides Feedback**: Outputs debug messages and a summary of processed directories and renaming rules.
+
+```bash
+ptkcompilers() {
+
+    # The sort_files function categorizes files by compiler using diec, renames .NET files to .exe and PE32/PE32+
+    # executables to .ex_ using file, and organizes them into subdirectories.
+
+    # Check if diec tool is available (for initial categorization)
+    if ! command -v diec >/dev/null 2>&1; then
+        echo "Error: 'diec' tool is not installed or not found in PATH."
+        echo "Please install Detect It Easy (DIE) to use this script."
+        echo "You can download it from: https://github.com/horsicq/Detect-It-Easy"
+        return 1
+    fi
+
+    # Check if file command is available (for PE32/PE32+ detection)
+    if ! command -v file >/dev/null 2>&1; then
+        echo "Error: 'file' command is not installed or not found in PATH."
+        echo "This is a standard Unix tool required for executable detection."
+        return 1
+    fi
+
+    # Check if at least one directory is provided
+    if [ $# -eq 0 ]; then
+        echo "Error: Please provide at least one source directory as parameter"
+        echo "Usage: $0 dir1 [dir2 dir3 ...]"
+        return 1
+    fi
+
+    # List of directory names to create/check
+    local DIR_NAMES="VisualCpp DotNet MinGW GoLang PureBasic Delphi VBNet Unknown Other"
+
+    # Process each directory provided as parameter
+    for SOURCE_DIR in "$@"; do
+        # Check if source directory exists
+        if [ ! -d "$SOURCE_DIR" ]; then
+            echo "Warning: Directory '$SOURCE_DIR' does not exist, skipping..."
+            continue
+        fi
+
+        echo "Processing directory: $SOURCE_DIR"
+        
+        # Create destination directories within the source directory
+        for dir in $DIR_NAMES; do
+            mkdir -p "$SOURCE_DIR/$dir"
+        done
+
+        # Loop through all files in the current source directory
+        for file in "$SOURCE_DIR"/*; do
+            # Skip if it's one of our destination directories or no files exist
+            case "$(basename "$file")" in
+                VisualCpp|DotNet|MinGW|GoLang|PureBasic|Delphi|VBNet|Unknown|Other)
+                    continue ;;
+            esac
+            [ -e "$file" ] || continue
+            
+            # Run diec and capture the output for initial categorization
+            local output
+            output=$(diec -d "$file" 2>/dev/null)
+            
+            # Determine category based on keywords and move files
+            if echo "$output" | grep -q "Microsoft Visual C/C++"; then
+                mv "$file" "$SOURCE_DIR/VisualCpp/"
+            elif echo "$output" | grep -q ".NET Framework\|VB.NET"; then
+                mv "$file" "$SOURCE_DIR/DotNet/"
+            elif echo "$output" | grep -q "MinGW"; then
+                mv "$file" "$SOURCE_DIR/MinGW/"
+            elif echo "$output" | grep -q "Go("; then
+                mv "$file" "$SOURCE_DIR/GoLang/"
+            elif echo "$output" | grep -q "PureBasic"; then
+                mv "$file" "$SOURCE_DIR/PureBasic/"
+            elif echo "$output" | grep -q "Borland Delphi"; then
+                mv "$file" "$SOURCE_DIR/Delphi/"
+            # New condition for Embarcadero Delphi or Turbo Linker/Delphi
+            elif echo "$output" | grep -q "Embarcadero Delphi\|Turbo Linker.*Delphi"; then
+                mv "$file" "$SOURCE_DIR/Delphi/"
+            elif echo "$output" | grep -q "VB.NET"; then
+                mv "$file" "$SOURCE_DIR/VBNet/"
+            elif echo "$output" | grep -q "Unknown: Unknown"; then
+                mv "$file" "$SOURCE_DIR/Unknown/"
+            else
+                mv "$file" "$SOURCE_DIR/Other/"
+            fi
+        done
+
+        # Rename files according to specifications
+        # 1. Rename all files in DotNet with .exe
+        echo "Renaming files in DotNet with .exe extension..."
+        for file in "$SOURCE_DIR/DotNet"/*; do
+            if [ -f "$file" ]; then
+                # Avoid re-adding .exe if already present
+                if [[ "$file" != *.exe ]]; then
+                    mv "$file" "${file}.exe"
+                    echo "Renamed: $file -> ${file}.exe"
+                fi
+            fi
+        done
+
+        # 2. Rename PE32/PE32+ executables in other directories with .ex_
+        echo "Checking for PE32/PE32+ executables in other directories using 'file'..."
+        for dir in $DIR_NAMES; do
+            # Skip DotNet directory as it has special treatment
+            [ "$dir" = "DotNet" ] && continue
+            
+            for file in "$SOURCE_DIR/$dir"/*; do
+                if [ -f "$file" ]; then
+                    # Use 'file' command to detect PE32 or PE32+ executables
+                    local output
+                    output=$(file "$file")
+                    echo "Debug: Checking $file"
+                    echo "Debug: file output = $output"
+                    
+                    # Adjusted regex for 'file' output
+                    if echo "$output" | grep -q "PE32 executable\|PE32+ executable"; then
+                        # Avoid re-adding .ex_ if already present
+                        if [[ "$file" != *.ex_ ]]; then
+                            mv "$file" "${file}.ex_"
+                            echo "Renamed: $file -> ${file}.ex_ (PE32/PE32+ detected)"
+                        else
+                            echo "Skipped: $file already has .ex_ extension"
+                        fi
+                    else
+                        echo "Debug: $file is not a PE32/PE32+ executable"
+                    fi
+                fi
+            done
+        done
+
+        # Remove empty directories among those we created
+        for dir in $DIR_NAMES; do
+            if [ -d "$SOURCE_DIR/$dir" ] && [ -z "$(ls -A "$SOURCE_DIR/$dir")" ]; then
+                rmdir "$SOURCE_DIR/$dir"
+                echo "Removed empty directory: $SOURCE_DIR/$dir"
+            fi
+        done
+    done
+
+    echo "Sorting and renaming completed!"
+    echo "Processed directories: $@"
+    echo "Created directories in each source directory (empty ones removed):"
+    echo "- VisualCpp: Files compiled with Microsoft Visual C/C++ (*.ex_ for PE32/PE32+)"
+    echo "- DotNet: .NET Framework files (all renamed with .exe)"
+    echo "- MinGW: Files compiled with MinGW (*.ex_ for PE32/PE32+)"
+    echo "- GoLang: Files compiled with Go (*.ex_ for PE32/PE32+)"
+    echo "- PureBasic: Files compiled with PureBasic (*.ex_ for PE32/PE32+)"
+    echo "- Delphi: Files compiled with Borland/Embarcadero Delphi (*.ex_ for PE32/PE32+)"
+    echo "- VBNet: Specific VB.NET files (*.ex_ for PE32/PE32+)"
+    echo "- Unknown: Files with unknown compiler (*.ex_ for PE32/PE32+)"
+    echo "- Other: Other uncategorized compilers (*.ex_ for PE32/PE32+)"
+}
+```
