@@ -164,6 +164,48 @@ petik@ams:signature-base$ find ./ -name "*ransom*yar"
 ./yara/apt_ransom_darkbit_feb23.yar
 ```
 
+```yara
+rule COMBINED_RANSOMWARE_Detector {
+   meta:
+      description = "Detecte les indicateurs de ransomware, comportements destructeurs et commandes typiques"
+      author = "Florian Roth (Nextron Systems), ditekSHen, adapté par [votre nom]"
+      reference = "https://securelist.com/lazarus-on-the-hunt-for-big-game/97757/, http://blog.talosintelligence.com/2018/02/olympic-destroyer.html"
+      date = "2025-03-11"
+      score = 70
+      id = "e8f4c2d1-9b5a-4e7b-8f9c-3a2d5e7f1b9c"
+   strings:
+      // Indicateurs de fichiers ransomware (SUSP_RANSOMWARE_Indicator_Jul20)
+      $rf1 = "Decrypt.txt" ascii wide
+      $rf2 = "DECRYPT_INSTRUCTION.TXT" ascii wide
+      $rf3 = "FILES ENCRYPTED.txt" ascii wide
+      $rf4 = "DECRYPT YOUR FILES" ascii wide
+      $rf5 = "DECRYPT-MY-FILES" ascii wide
+
+      // Commandes destructrices (Destructive_Ransomware_Gen1)
+      $dc1 = "delete shadows /all /quiet" fullword wide
+      $dc2 = "/set {default} bootstatuspolicy ignoreallfailures" fullword wide
+      $dc3 = "delete catalog -quiet" fullword wide
+
+      // Commandes typiques de ransomware (INDICATOR_SUSPICIOUS_GENRansomware)
+      $rc1 = "vssadmin.exe Delete Shadows /all" ascii wide nocase
+      $rc2 = "wmic SHADOWCOPY DELETE" ascii wide nocase
+      $rc3 = "} recoveryenabled no" ascii wide nocase
+      $rc4 = "wbadmin delete backup" ascii wide nocase
+      $rc5 = "resize shadowstorage /for=c: /on=c: /maxsize=" ascii wide nocase
+      $rc6 = /del \/s \/f \/q(( [A-Za-z]:\\(\*\.|[Bb]ackup))(VHD|bac|bak|wbcat|bkf)?)+/ ascii wide
+
+   condition:
+      uint16(0) == 0x5a4d and // Signature PE (fichier exécutable Windows)
+      filesize < 1400KB and   // Limite de taille pour inclure les cas les plus courants
+      (
+         1 of ($rf*) or       // Au moins un indicateur de fichier ransomware
+         1 of ($dc*) or       // Ou une commande destructrice
+         2 of ($rc*) or       // Ou deux commandes typiques de ransomware
+         #rc6 > 4             // Ou plus de 4 suppressions de fichiers de sauvegarde
+      )
+}
+```
+
 Code I use :
 ```bash
 # Function to scan for ransomware and move detected files to a quarantine folder
