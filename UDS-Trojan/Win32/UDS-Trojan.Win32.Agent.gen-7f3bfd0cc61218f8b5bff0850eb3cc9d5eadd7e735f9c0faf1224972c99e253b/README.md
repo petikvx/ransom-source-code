@@ -210,6 +210,8 @@ LRESULT __stdcall sub_401BE0(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) 
 - **GUI**: Displays a window prompting for a password.
 - **Decryption**: Verifies the password using a CRC32 check (hardcoded value: `664891434`).
 
+![image](image.png)
+
 Conclusion
 ----------
 
