@@ -209,7 +209,7 @@ rule COMBINED_RANSOMWARE_Detector {
 Code I use :
 ```bash
 # Function to scan for ransomware and move detected files to a quarantine folder
-ptkyara() {
+ptk_yara() {
     # Check if YARA is installed
     if ! command -v yara &> /dev/null; then
         echo "Error: YARA is not installed. Please install it:"
@@ -350,7 +350,7 @@ The `ptkcompilers` Bash function organizes files in specified directories based 
 6.  **Provides Feedback**: Outputs debug messages and a summary of processed directories and renaming rules.
 
 ```bash
-ptkcompilers() {
+ptk_compilers() {
 
     # The sort_files function categorizes files by compiler using diec, renames .NET files to .exe and PE32/PE32+
     # executables to .ex_ using file, and organizes them into subdirectories.
